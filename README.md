@@ -12,7 +12,7 @@ $ npm install
 $ cp env.example .env
 ```
 Update Configuration in file `.env`
-To run this project, install it locally using npm:
+<br>To run this project, install it locally using npm:
 ```
 $ npm start
 ```
