@@ -33,7 +33,7 @@ open Postman with `POST` method
 http://localhost:3000/seed/seed
 ```
 
-Open Browser http://localhost:3000/map(http://localhost:3000/map)
+Open Browser http://localhost:3000/map
 
 ## License
 
