@@ -1,0 +1,160 @@
+extends layout
+block content
+    #map
+    #modal_test.modal.fade(tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true")
+        .modal-dialog
+            .modal-content
+                form.form-horizontal(method="post")
+                    .modal-header
+                        h5#exampleModalLabel.modal-title Create Polygon
+                        button.close(type="button" data-dismiss="modal" aria-label="Close")
+                            span(aria-hidden="true") ×
+                    .modal-body
+                        .form-group
+                            label.col-md-3.control-label(for="nama") Nama Polygon
+                            .col-md-6
+                                input#nama.form-control(type="text" name="name" autofocus="" required="")
+                                span.help-block.with-errors
+                        .form-group
+                            label.col-md-3.control-label(for="G") Geometry
+                            .col-md-6
+                                textarea#deskripsi(name="geom" cols="30" rows="10")
+                                span.help-block.with-errors
+                        .form-group
+                            label.col-md-3.control-label(for="deskripsi") Deskripsi
+                            .col-md-6
+                                textarea#deskripsi(name="deskripsi" cols="30" rows="10")
+                                span.help-block.with-errors
+                    .modal-footer
+                        button.btn.btn-secondary(type="button" data-dismiss="modal") Close
+                        button.btn.btn-primary(type="submit") Save
+
+    script.
+        // Create variable to hold map element, give initial settings to map
+        const map = L.map('map',{ center: [-2.69240, 111.63035], zoom: 17});
+
+        //- plugin mouseposition
+        L.control.mousePosition().addTo(map);
+
+        //- plugin country select
+        let select = L.countrySelect().addTo(map);
+        select.on('change', function (e) {
+            if (e.feature === undefined) { //No action when the first item ("Country") is selected
+                return;
+            }
+            var country = L.geoJson(e.feature);
+            if (this.previousCountry != null) {
+                map.removeLayer(this.previousCountry);
+            }
+            this.previousCountry = country;
+
+            map.addLayer(country);
+            map.fitBounds(country.getBounds());
+        });
+
+        //plugin change map
+        const basemaps = [
+            L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+            }),
+            L.tileLayer('//{s}.tile.stamen.com/toner-lite/{z}/{x}/{y}.png', {
+                attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+                subdomains: 'abcd',
+                maxZoom: 20,
+                minZoom: 0,
+                label: 'Toner Lite' // optional label used for tooltip
+            }),
+            L.tileLayer('//{s}.tile.stamen.com/toner/{z}/{x}/{y}.png', {
+                attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+                subdomains: 'abcd',
+                maxZoom: 20,
+                minZoom: 0,
+                label: 'Toner'
+            })
+        ];
+
+        map.addControl(L.control.basemaps({
+            basemaps: basemaps,
+            tileX: 0, // tile X coordinate
+            tileY: 0, // tile Y coordinate
+            tileZ: 1 // tile zoom level
+        }));
+
+        L.control.custom({
+            position: 'topright',
+            content : `<button type="button" class="btn btn-warning">
+                <i class="fa fa-square" aria-hidden="true"></i>
+                    </button>`,
+            classes : 'btn-group-vertical btn-group-sm',
+            style   :
+            {
+                margin: '10px',
+                padding: '0px 0 0 0',
+                cursor: 'pointer',
+            },
+            datas   :
+            {
+                'foo': 'bar',
+            },
+            events:
+            {
+                click: function(data)
+                {               
+                    $('#modal_test').modal('show');
+                    //- swal ( "Oops" ,  "Something went wrong!" ,  "error" )
+                },
+            }
+        }).addTo(map);
+
+        //icon map
+        const myIcon = L.icon({
+            iconUrl: '/images/hospital-icon.png',
+            iconSize: [30, 35],
+            iconAnchor: [22, 34],
+            popupAnchor: [-3, -26],
+        });
+
+        //data geoJson
+        $.ajax({
+            type: "GET",
+            url: 'http://localhost:3000/api/map/data',
+            success: function(data){
+                L.geoJson(data[0].row_to_json,
+                    {
+                        pointToLayer: function(feature, latlng) {
+                            return L.marker(latlng, {icon: myIcon});
+                        },
+                        onEachFeature: function (feature, layer) {
+                            //- console.log(feature);
+                            if(feature.properties.f3){
+                                let html = `<strong>${feature.properties.f2}</strong>
+                                <br>${feature.properties.f3}
+                                <br>${feature.properties.f4}`;
+                                layer.bindPopup(html);
+                            }else{
+                                layer.bindPopup(feature.properties.f2);
+                            }
+                        }
+                    }
+                ).addTo(map);
+            }
+        });
+
+        $('#modal_test form').on('submit', function (e) {
+            if (!e.isDefaultPrevented()) {
+                $.ajax({
+                    url: 'http://localhost:3000/api/polygon/create',
+                    type: "POST",
+                    data: $('#modal_test form').serialize(),
+                    dataType: 'JSON',
+                    success: function (data) {
+                        $('#modal_test').modal('hide');
+                        location.reload();
+                    },
+                    error: function () {
+                        swal ( "Oops" ,  "Something went wrong!" ,  "error" )
+                    }
+                });
+                return false;
+            }
+        });
