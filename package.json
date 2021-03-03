@@ -16,7 +16,7 @@
     "leaflet-mouse-position": "^1.2.0",
     "morgan": "~1.9.1",
     "pg": "^8.3.0",
-    "pug": "^3.0.0",
+    "pug": "^3.0.1",
     "sweetalert": "^2.1.2"
   }
 }
